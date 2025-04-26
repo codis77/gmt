@@ -1,0 +1,3 @@
+work in progress ...
+a very simple application, using the LSM303DLHC or HMC5883 magnetometer sensor to gather 1 sample per minute, and store in a file;
+originally targeting Raspberry-Pi like SBCs
