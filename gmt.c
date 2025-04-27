@@ -69,17 +69,17 @@ static void   initDefaultCfg   (elfSenseConfig *pcfg);
 static int    getConfig        (elfSenseConfig *pecfg, deviceConfig *dcfg);
 static void   setSensorConfig  (elfSenseConfig *pecfg, deviceConfig *dcfg);
 static int    setupSensor      (deviceConfig *dcfg, int ifh);
-static int    initSmplTimer    (elfSenseConfig *pscfg, __sighandler_t callback);
 static int    i2c_write        (uchar slave_addr, uchar reg, uchar data, int ifh);
 static int    i2c_readMagn     (magnBuffer *mBuf, uchar slave_addr, int ifh);
 static int    gmSample         (sampler_cfg *gmdata);
 static int    writeData        (sampler_cfg *gmdata);
 
-static void   printHelp        (char **);
-static void   strupr           (char *str);
 static void   exithandler      (int signumber);
 
+#if 0
 static void   updateRLog       (void);
+static void   printHelp        (char **);
+#endif
 
 extern FILE  *openCfgfile      (char *name);
 extern int    getstrcfgitem    (FILE *pf, char *pItem, char *ptarget);
@@ -231,11 +231,12 @@ fputc ('+', stdout); fflush (stdout);
 
 
 
+#if 0
 static void  printHelp (char **argv)
 {
     printf ("\n -- geomagnetism monitoring program --\n");
 }
-
+#endif
 
 
 static void  initDefaultCfg (elfSenseConfig *pcfg)
@@ -561,7 +562,6 @@ static int  writeData (sampler_cfg *gmdata)
 {
     FILE        *hFile;
     char         fbuf[256];
-    int          i, w;
     time_t       t;
     struct tm   *ptime;
     struct stat  st = { 0 };
@@ -583,7 +583,6 @@ static int  writeData (sampler_cfg *gmdata)
     /* for the moment, just create a file in the local sub-folder;
      * using the current date as name automatically creates a new file each day;
      * and for one write access per minute, open/close it each time is fine */
-    w = 1;
     sprintf (fbuf, "%s/%4d_%02d_%02d.dat", GMT_DATA_PATH, ptime->tm_year + 2000, ptime->tm_mon+1, ptime->tm_mday);
     if (!(hFile = fopen (fbuf, "a+")))
     {
@@ -618,6 +617,7 @@ static int  writeData (sampler_cfg *gmdata)
 
     fflush (hFile);
     fclose (hFile);
+    return 0;
 }
 
 
@@ -678,4 +678,5 @@ static struct tm  *sim_localtime (const time_t *timep)
 static unsigned int sim_sleep (unsigned int seconds)
 {
     usleep (seconds * 100);
+    return 0;
 }
