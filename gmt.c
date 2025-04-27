@@ -55,6 +55,7 @@ typedef struct
     magnBuffer     vBuf;         /* sensor value buffer           */
     uchar          addr;         /* i2c slave device address      */
     int            axes;         /* axis sampling configuration   */
+    double         fullScale;    /* configured fullscale value    */
     double         scaleVal;     /* physical scale value          */
     double         dx;           /* scaled double values per axis */
     double         dy;
@@ -180,11 +181,11 @@ int  main (int argc, char **argv)
 
 
     /* initialize/copy some "work" data */
-    cbData.ifh      = iDev;
-    cbData.addr     = dcfg.dev_addr;
-    cbData.axes     = escfg.sampleAxes;
-    cbData.scaleVal = (escfg.device == GMT_DEVICE_LSM303) ? FS_VALUE_LSM303 : FS_VALUE_HMC5883;
-    cbData.scaleVal = cbData.scaleVal / SHORT_MAX_DBL;
+    cbData.ifh       = iDev;
+    cbData.addr      = dcfg.dev_addr;
+    cbData.axes      = escfg.sampleAxes;
+    cbData.fullScale = (escfg.device == GMT_DEVICE_LSM303) ? FS_VALUE_LSM303 : FS_VALUE_HMC5883;
+    cbData.scaleVal  = cbData.fullScale / SHORT_MAX_DBL;
 
     /* clear out, just to be safe */
     memset (dData, 0, sizeof (dData));
@@ -597,14 +598,14 @@ static int  writeData (sampler_cfg *gmdata)
     /* write header to (each) output file once */
     if (!dsCount)
     {
-        sprintf (fbuf, "# -- geomagnetism data, per minute --");
+        sprintf (fbuf, "# -- geomagnetism data, per minute --\n");
         fputs (fbuf, hFile);
         sprintf (fbuf, "#start time : %02d.%02d.%4d, %02d:%02d\n", ptime->tm_mon+1, ptime->tm_mday,
              ptime->tm_year + 1900, ptime->tm_hour, ptime->tm_min);
         fputs (fbuf, hFile);
         sprintf (fbuf, "# format :\n# HH:MM, X_data, Y_data, Z_data\n");
         fputs (fbuf, hFile);
-        sprintf (fbuf, "# fullscale value = %.5lf Ga\n", gmdata->scaleVal);
+        sprintf (fbuf, "# fullscale value = %.5lf Ga\n", gmdata->fullScale);
         fputs (fbuf, hFile);
         fflush (hFile);
     }
