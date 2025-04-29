@@ -140,7 +140,7 @@ int  main (int argc, char **argv)
     initDefaultCfg (&escfg);
 
     /* need to load a "dynamic" configuration here later */
-#if 0
+#if 1
     getConfig (&escfg, &dcfg);
 #endif
 
@@ -285,6 +285,7 @@ static int  getConfig (elfSenseConfig *pecfg, deviceConfig *dcfg)
 
     printf ("\nconfigured device = <%s>", pd);
 
+    /* data output file path; set directly */
     if ((k = getstrcfgitem  (pcf, GMT_CFG_DATAPATH, px)))
     {
         if (strlen (px) > 0)
@@ -295,6 +296,8 @@ static int  getConfig (elfSenseConfig *pecfg, deviceConfig *dcfg)
         }
     }
 
+    /* data output mode; axes separately, or vector sum;
+     * vector sum option not yet implemented */
     if ((k = getstrcfgitem  (pcf, GMT_CFG_MODE, px)))
     {
         pecfg->outputMode = GMT_AXIS_ALL;
