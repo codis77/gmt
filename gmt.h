@@ -102,12 +102,12 @@ typedef unsigned char   uchar;
  */
 typedef struct
 {
-    int     device;                       /* sensor device type */
-    int     i2cBus;                       /* i2c bus number     */
-    int     sampleRate;                   /* sampling rate      */
-    int     sampleAxes;                   /* axes to sample     */
-    double  fullScale;                    /* fullscale value    */
-    char    outputPipe[GMT_PN_SIZE];      /* default pipe name  */
+    int     device;              /* sensor device type  */
+    int     i2cBus;              /* i2c bus number      */
+    int     sampleRate;          /* sampling rate       */
+    int     sampleAxes;          /* axes to sample      */
+    double  fullScale;           /* fullscale value     */
+    char    outputMode;          /* default output mode */
 }
 elfSenseConfig;
 
@@ -117,22 +117,22 @@ elfSenseConfig;
  */
 typedef struct
 {
-    unsigned char  dev_addr;              /* device i2c address   */
-    unsigned char  adr_cra;               /* address register CRA */
-    unsigned char  adr_crb;               /* address register CRB */
-    unsigned char  adr_mr;                /* address register MR  */
-    unsigned char  regm_cra;              /* value register CRA   */
-    unsigned char  regm_crb;              /* value register CRB   */
-    unsigned char  regm_mr;               /* value register MR    */
+    unsigned char  dev_addr;     /* device i2c address   */
+    unsigned char  adr_cra;      /* address register CRA */
+    unsigned char  adr_crb;      /* address register CRB */
+    unsigned char  adr_mr;       /* address register MR  */
+    unsigned char  regm_cra;     /* value register CRA   */
+    unsigned char  regm_crb;     /* value register CRB   */
+    unsigned char  regm_mr;      /* value register MR    */
 }
 deviceConfig;
 
 typedef struct
 {
-    short          mgnX;                  /* X axis data, 16-bit  */
-    short          mgnY;                  /* X axis data, 16-bit  */
-    short          mgnZ;                  /* X axis data, 16-bit  */
-    unsigned char  ctrlb;                 /* CTRL reg. B value    */
+    short          mgnX;         /* X axis data, 16-bit  */
+    short          mgnY;         /* X axis data, 16-bit  */
+    short          mgnZ;         /* X axis data, 16-bit  */
+    unsigned char  ctrlb;        /* CTRL reg. B value    */
 }
 magnBuffer;
 
@@ -176,22 +176,27 @@ databuffer;
 
 /* --- runtime-loaded config files ---
  */
-#define ELFWATCH_CFG                "./elfwatch.config"
-#define ELFDP_CFG                   "./elfdp.config"
-#define ELFIMAGE_CFG                "./elfimage.config"
-#define ELFMSPEC_CFG                "./elfwmspec.config"
+#define GMT_CFG                "./gmt.config"
 
-/* elfwatch config */
+/* gmt config */
 #define CFG_STR_MAX                 256
-#define ELFW_CFG_BUS                "I2C_BUS"
-#define ELFW_CFG_DEVICE             "DEVICE"
-#define ELFW_CFG_AXES               "AXES"
+#define GMT_CFG_BUS                 "I2C_BUS"
+#define GMT_CFG_DEVICE              "DEVICE"
+#define GMT_CFG_AXES                "AXES"
 
-#define ELFW_CFG_DEV_LSM303         "LSM303"
-#define ELFW_CFG_DEV_HMC5883        "HMC5883"
+#define GMT_CFG_DEV_LSM303          "LSM303"
+#define GMT_CFG_DEV_HMC5883         "HMC5883"
 #define GMT_AXIS_X                  'X'
 #define GMT_AXIS_Y                  'Y'
 #define GMT_AXIS_Z                  'Z'
+
+#define GMT_CFG_DATAPATH            "DATAFILE_PATH"
+#define GMT_CFG_MODE                "OUTPUT_MODE"
+#define GMT_MD_AXES                 "AXES"
+#define GMT_MD_SUM                  "SUM"
+#define GMT_AXIS_ALL                0      /* all axes separately */
+#define GMT_AXIS_SUM                1      /* vector sum only     */
+
 
 #define LB_SIZE                     2048
 
@@ -207,7 +212,7 @@ databuffer;
 #define SHORT_MAX_DBL               32767.0
 
 #define GMT_DATA_PATH               "./data"
-#define FILENAME_MAXSIZE            256
+#define FILENAME_MAXSIZE            512
 #define FILENAME_BASE               "./specData"
 #define FILENAME_SIZE               64     /* used name string limit*/
 

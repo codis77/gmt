@@ -95,6 +95,7 @@ static runtime_log     rLog = {0, 0, 0};
 static char            devName[64] = {'\0'};
 static int             iDev        = 0;               /* i2c device handle */
 static unsigned short  dData[MINS_PER_DAY][GMT_AXES];
+static char            datapath[FILENAME_MAXSIZE] = { GMT_DATA_PATH };
 
 #ifdef __SIMULATION__
   /* in simulation mode, run max 5 minutes */
@@ -259,44 +260,51 @@ static int  getConfig (elfSenseConfig *pecfg, deviceConfig *dcfg)
     char  pd[128], px[128];
     int   bus, rate, i, k;
 
-    if (!(pcf = openCfgfile (ELFWATCH_CFG)))
+    if (!(pcf = openCfgfile (GMT_CFG)))
     {
         printf ("\n no config file (%d) !", errno);
         return 0;
     }
 
     /* string items */
-    if ((i = getstrcfgitem  (pcf, ELFW_CFG_DEVICE, pd)))
+    if ((i = getstrcfgitem  (pcf, GMT_CFG_DEVICE, pd)))
     {
-        if (strstr (pd, ELFW_CFG_DEV_LSM303))
+        if (strstr (pd, GMT_CFG_DEV_LSM303))
         {
             pecfg->device = GMT_DEVICE_LSM303;
             setSensorConfig (pecfg, dcfg);
         }
-        else if (strstr (pd, ELFW_CFG_DEV_HMC5883))
+        else if (strstr (pd, GMT_CFG_DEV_HMC5883))
         {
             pecfg->device = GMT_DEVICE_HMC5883;
             setSensorConfig (pecfg, dcfg);
         }
     }
 
-    if ((k = getstrcfgitem  (pcf, ELFW_CFG_AXES, px)))
+    printf ("\nconfigured device = <%s>", pd);
+
+    if ((k = getstrcfgitem  (pcf, GMT_CFG_DATAPATH, px)))
     {
-        pecfg->sampleAxes = 0;
-        if (strchr (px, GMT_AXIS_X))
-            pecfg->sampleAxes |= GMT_AXIS_USE_X;
-        if (strchr (px, GMT_AXIS_Y))
-            pecfg->sampleAxes |= GMT_AXIS_USE_Y;
-        if (strchr (px, GMT_AXIS_Z))
-            pecfg->sampleAxes |= GMT_AXIS_USE_Z;
+        if (strlen (px) > 0)
+        {
+            strncpy (datapath, px, FILENAME_MAXSIZE);
+            datapath[FILENAME_MAXSIZE-1] = '\0';
+            printf ("\noutput file path  = <%s>", datapath);
+        }
     }
 
-    printf ("\nconfigured device = <%s>", pd);
-    printf ("\naxes config       = <%s>", px);
+    if ((k = getstrcfgitem  (pcf, GMT_CFG_MODE, px)))
+    {
+        pecfg->outputMode = GMT_AXIS_ALL;
+        if (strstr (px, GMT_MD_SUM))
+            pecfg->outputMode = GMT_AXIS_SUM;
+    }
+
+    printf ("\nmode config       = <%s>", px);
 
     /* integer items */
     bus = rate = -1;
-    if ((i = getintcfgitem  (pcf, ELFW_CFG_BUS, &bus)))
+    if ((i = getintcfgitem  (pcf, GMT_CFG_BUS, &bus)))
         pecfg->i2cBus = bus;
 
     if (i)
