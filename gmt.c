@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <time.h>
+#include <math.h>
 
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
@@ -55,6 +56,7 @@ typedef struct
     magnBuffer     vBuf;         /* sensor value buffer           */
     uchar          addr;         /* i2c slave device address      */
     int            axes;         /* axis sampling configuration   */
+    int            mode;         /* data file value mode          */
     double         fullScale;    /* configured fullscale value    */
     double         scaleVal;     /* physical scale value          */
     double         dx;           /* scaled double values per axis */
@@ -139,10 +141,8 @@ int  main (int argc, char **argv)
      */
     initDefaultCfg (&escfg);
 
-    /* need to load a "dynamic" configuration here later */
-#if 1
+    /* load configuration */
     getConfig (&escfg, &dcfg);
-//#endif
 
 #ifndef __SIMULATION__
 
@@ -184,6 +184,7 @@ int  main (int argc, char **argv)
     cbData.ifh       = iDev;
     cbData.addr      = dcfg.dev_addr;
     cbData.axes      = escfg.sampleAxes;
+    cbData.mode      = escfg.outputMode;
     cbData.fullScale = (escfg.device == GMT_DEVICE_LSM303) ? FS_VALUE_LSM303 : FS_VALUE_HMC5883;
     cbData.scaleVal  = cbData.fullScale / SHORT_MAX_DBL;
 
@@ -552,6 +553,7 @@ static int  writeData (sampler_cfg *gmdata)
 {
     FILE        *hFile;
     char         fbuf[256];
+    long         pos;
     time_t       t;
     struct tm   *ptime;
     struct stat  st = { 0 };
@@ -587,10 +589,13 @@ static int  writeData (sampler_cfg *gmdata)
     {
         sprintf (fbuf, "# -- geomagnetism data, per minute --\n");
         fputs (fbuf, hFile);
-        sprintf (fbuf, "#start time : %02d.%02d.%4d, %02d:%02d\n", ptime->tm_mon+1, ptime->tm_mday,
+        sprintf (fbuf, "# start time : %02d.%02d.%4d, %02d:%02d\n", ptime->tm_mon+1, ptime->tm_mday,
              ptime->tm_year + 1900, ptime->tm_hour, ptime->tm_min);
         fputs (fbuf, hFile);
-        sprintf (fbuf, "# format :\n# HH:MM, X_data, Y_data, Z_data\n");
+        if (cbData.mode == GMT_AXIS_ALL)
+            sprintf (fbuf, "# format :\n# HH:MM, X_data, Y_data, Z_data\n");
+        else
+            sprintf (fbuf, "# format :\n# HH:MM, XYZ_Vector_data\n");
         fputs (fbuf, hFile);
         sprintf (fbuf, "# fullscale value = %.5lf Ga\n", gmdata->fullScale);
         fputs (fbuf, hFile);
@@ -599,7 +604,15 @@ static int  writeData (sampler_cfg *gmdata)
     mday = ptime->tm_mday;
 
     /* write data */
-    sprintf (fbuf, "%02d:%02d, %.5lf, %.05lf, %05lf\n", ptime->tm_hour, ptime->tm_min, gmdata->dx, gmdata->dy, gmdata->dz);
+    if (cbData.mode == GMT_AXIS_ALL)
+        sprintf (fbuf, "%02d:%02d, %.6lf, %.06lf, %06lf\n", ptime->tm_hour, ptime->tm_min, gmdata->dx, gmdata->dy, gmdata->dz);
+    else
+    {
+        double  dh, vs;
+        dh = gmdata->dx * gmdata->dx + gmdata->dy * gmdata->dy + gmdata->dz * gmdata->dz;
+        vs = sqrt (dh);
+        sprintf (fbuf, "%02d:%02d, %.6lf\n", ptime->tm_hour, ptime->tm_min, vs);
+    }
     fputs (fbuf, hFile);
 
     fflush (hFile);
