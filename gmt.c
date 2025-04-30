@@ -139,9 +139,9 @@ int  main (int argc, char **argv)
     initDefaultCfg (&escfg);
 
     /* need to load a "dynamic" configuration here later */
-#if 0
+//#if 0
     getConfig (&escfg, &dcfg);
-#endif
+//#endif
 
 #ifndef __SIMULATION__
 
@@ -193,7 +193,8 @@ int  main (int argc, char **argv)
      * first, get near the next minute mark */
 
 #ifdef __SIMULATION__
-     usleep (300000);
+    ptime = sim_localtime (&t);
+    usleep (300000);
 #else
  /* use the current time */
     t     = time (NULL);
@@ -281,8 +282,6 @@ static int  getConfig (elfSenseConfig *pecfg, deviceConfig *dcfg)
         }
     }
 
-    printf ("\nconfigured device = <%s>", pd);
-
     if ((k = getstrcfgitem  (pcf, GMT_CFG_DATAPATH, px)))
     {
         if (strlen (px) > 0)
@@ -300,21 +299,10 @@ static int  getConfig (elfSenseConfig *pecfg, deviceConfig *dcfg)
             pecfg->outputMode = GMT_AXIS_SUM;
     }
 
-    printf ("\nmode config       = <%s>", px);
-
     /* integer items */
     bus = rate = -1;
     if ((i = getintcfgitem  (pcf, GMT_CFG_BUS, &bus)))
         pecfg->i2cBus = bus;
-
-    if (i)
-        printf ("\nbus               = <%d>", bus);
-    else
-        printf ("\nbus not configured");
-    if (k)
-        printf ("\nrate              = <%d>\n", rate);
-    else
-        printf ("\nOD rate not configured\n");
 
     return 0;
 }
@@ -561,10 +549,10 @@ static int  writeData (sampler_cfg *gmdata)
     FILE        *hFile;
     char         fbuf[256];
     int          i, w;
+    long         pos;
     time_t       t;
     struct tm   *ptime;
     struct stat  st = { 0 };
-    static int   dsCount = 0;  /* dataset counter */
     static int   mday    = 0;  /* last recent day, 'invalid' start value */
 
     /* use the current time */
@@ -590,12 +578,11 @@ static int  writeData (sampler_cfg *gmdata)
         return 1;
     }
 
-    /* reset dataset counter upon date transit */
-    if (ptime->tm_mday != mday)
-        dsCount = 0;
+    fseek (hFile, 0, SEEK_END);
+    pos = ftell (hFile);
 
     /* write header to (each) output file once */
-    if (!dsCount)
+    if (pos == 0)
     {
         sprintf (fbuf, "# -- geomagnetism data, per minute --");
         fputs (fbuf, hFile);
@@ -608,7 +595,6 @@ static int  writeData (sampler_cfg *gmdata)
         fputs (fbuf, hFile);
         fflush (hFile);
     }
-    dsCount++;
     mday = ptime->tm_mday;
 
     /* write data */
