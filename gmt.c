@@ -55,6 +55,7 @@ typedef struct
     magnBuffer     vBuf;         /* sensor value buffer           */
     uchar          addr;         /* i2c slave device address      */
     int            axes;         /* axis sampling configuration   */
+    double         fullScale;    /* configured fullscale value    */
     double         scaleVal;     /* physical scale value          */
     double         dx;           /* scaled double values per axis */
     double         dy;
@@ -68,17 +69,17 @@ static void   initDefaultCfg   (elfSenseConfig *pcfg);
 static int    getConfig        (elfSenseConfig *pecfg, deviceConfig *dcfg);
 static void   setSensorConfig  (elfSenseConfig *pecfg, deviceConfig *dcfg);
 static int    setupSensor      (deviceConfig *dcfg, int ifh);
-static int    initSmplTimer    (elfSenseConfig *pscfg, __sighandler_t callback);
 static int    i2c_write        (uchar slave_addr, uchar reg, uchar data, int ifh);
 static int    i2c_readMagn     (magnBuffer *mBuf, uchar slave_addr, int ifh);
 static int    gmSample         (sampler_cfg *gmdata);
 static int    writeData        (sampler_cfg *gmdata);
 
-static void   printHelp        (char **);
-static void   strupr           (char *str);
 static void   exithandler      (int signumber);
 
+#if 0
 static void   updateRLog       (void);
+static void   printHelp        (char **);
+#endif
 
 extern FILE  *openCfgfile      (char *name);
 extern int    getstrcfgitem    (FILE *pf, char *pItem, char *ptarget);
@@ -139,7 +140,7 @@ int  main (int argc, char **argv)
     initDefaultCfg (&escfg);
 
     /* need to load a "dynamic" configuration here later */
-//#if 0
+#if 1
     getConfig (&escfg, &dcfg);
 //#endif
 
@@ -180,11 +181,11 @@ int  main (int argc, char **argv)
 
 
     /* initialize/copy some "work" data */
-    cbData.ifh      = iDev;
-    cbData.addr     = dcfg.dev_addr;
-    cbData.axes     = escfg.sampleAxes;
-    cbData.scaleVal = (escfg.device == GMT_DEVICE_LSM303) ? FS_VALUE_LSM303 : FS_VALUE_HMC5883;
-    cbData.scaleVal = cbData.scaleVal / SHORT_MAX_DBL;
+    cbData.ifh       = iDev;
+    cbData.addr      = dcfg.dev_addr;
+    cbData.axes      = escfg.sampleAxes;
+    cbData.fullScale = (escfg.device == GMT_DEVICE_LSM303) ? FS_VALUE_LSM303 : FS_VALUE_HMC5883;
+    cbData.scaleVal  = cbData.fullScale / SHORT_MAX_DBL;
 
     /* clear out, just to be safe */
     memset (dData, 0, sizeof (dData));
@@ -231,11 +232,12 @@ fputc ('+', stdout); fflush (stdout);
 
 
 
+#if 0
 static void  printHelp (char **argv)
 {
     printf ("\n -- geomagnetism monitoring program --\n");
 }
-
+#endif
 
 
 static void  initDefaultCfg (elfSenseConfig *pcfg)
@@ -292,6 +294,8 @@ static int  getConfig (elfSenseConfig *pecfg, deviceConfig *dcfg)
         }
     }
 
+    /* data output mode; axes separately, or vector sum;
+     * vector sum option not yet implemented */
     if ((k = getstrcfgitem  (pcf, GMT_CFG_MODE, px)))
     {
         pecfg->outputMode = GMT_AXIS_ALL;
@@ -548,8 +552,6 @@ static int  writeData (sampler_cfg *gmdata)
 {
     FILE        *hFile;
     char         fbuf[256];
-    int          i, w;
-    long         pos;
     time_t       t;
     struct tm   *ptime;
     struct stat  st = { 0 };
@@ -570,7 +572,6 @@ static int  writeData (sampler_cfg *gmdata)
     /* for the moment, just create a file in the local sub-folder;
      * using the current date as name automatically creates a new file each day;
      * and for one write access per minute, open/close it each time is fine */
-    w = 1;
     sprintf (fbuf, "%s/%4d_%02d_%02d.dat", GMT_DATA_PATH, ptime->tm_year + 2000, ptime->tm_mon+1, ptime->tm_mday);
     if (!(hFile = fopen (fbuf, "a+")))
     {
@@ -584,14 +585,14 @@ static int  writeData (sampler_cfg *gmdata)
     /* write header to (each) output file once */
     if (pos == 0)
     {
-        sprintf (fbuf, "# -- geomagnetism data, per minute --");
+        sprintf (fbuf, "# -- geomagnetism data, per minute --\n");
         fputs (fbuf, hFile);
         sprintf (fbuf, "#start time : %02d.%02d.%4d, %02d:%02d\n", ptime->tm_mon+1, ptime->tm_mday,
              ptime->tm_year + 1900, ptime->tm_hour, ptime->tm_min);
         fputs (fbuf, hFile);
         sprintf (fbuf, "# format :\n# HH:MM, X_data, Y_data, Z_data\n");
         fputs (fbuf, hFile);
-        sprintf (fbuf, "# fullscale value = %.5lf Ga\n", gmdata->scaleVal);
+        sprintf (fbuf, "# fullscale value = %.5lf Ga\n", gmdata->fullScale);
         fputs (fbuf, hFile);
         fflush (hFile);
     }
@@ -603,6 +604,7 @@ static int  writeData (sampler_cfg *gmdata)
 
     fflush (hFile);
     fclose (hFile);
+    return 0;
 }
 
 
@@ -663,4 +665,5 @@ static struct tm  *sim_localtime (const time_t *timep)
 static unsigned int sim_sleep (unsigned int seconds)
 {
     usleep (seconds * 100);
+    return 0;
 }
