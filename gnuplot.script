@@ -1,0 +1,30 @@
+
+set xdata time
+set timefmt '%H:%M'
+set format x "%H:%M"
+set logscale y
+set grid x
+set grid y
+plot './2025_05_04.dat' using 1:2 with impulses
+
+#####################################
+###https://bytefreaks.net/applications/gnuplot/gnuplot-create-a-plot-with-date-time-on-x-axis
+#
+# #set the file separator to be the comma,for processing the CSV file
+# set datafile separator ","
+#
+# set xdata time
+
+# #define how the date/time input must be parsed;
+# #in this example we expect the input to be like '2016-01-19 14:25:00'
+# set timefmt '%Y-%m-%d %H:%M:%S'
+#
+# #set the output format that will be shown on the X axis;
+# #here we expect to show '19-01 <\n> 14:25"
+# set format x "%d-%m\n%H:%M"
+#
+# #Set the X axis label
+# set xlabel "Event Time"
+# #Set the Y axis label
+# set ylabel "Time Difference"
+
